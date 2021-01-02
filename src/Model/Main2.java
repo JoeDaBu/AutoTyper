@@ -4,87 +4,90 @@ import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.util.Map;
 
-public class Main2 extends JFrame {
+public class Main2 extends JFrame implements ActionListener {
 
     public static AutoType2 instance;
     public static Robot robot;
     public static Map<String, Integer> toType;
     public static Thread thread;
     public static String string;
+    public static Integer delay;
 
+    private static JButton start;
     private static Boolean inFocus = false;
     private static JPanel panel;
 
-    /**
-     * Aye, I do not recommend storing passwords as plain text if it is for
-     * something important but here is this code anyway because i'm bored.
-     *
-     * Also should not that using a AutoHotKey or any other macro program is way
-     * easier but im using Java because learning amiright
-     */
+//creates the JFrame and initiates Main2
     public static void main(String[] args) {
-
-        javax.swing.SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                Main2 frame = new Main2("-np");
+                Main2 frame = new Main2("-np", 1000);
                 frame.setTitle("Copier");
-                frame.setResizable(false);
-                frame.setSize(1000, 1000);
+                frame.setResizable(true);
+                frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+
+                start.setFont(new Font("Arial", Font.PLAIN, JFrame.MAXIMIZED_HORIZ*200));
                 frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
                 frame.setVisible(true);
-                frame.setState(Frame.ICONIFIED);
-
-                Thread t = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            Thread.sleep(1000);
-                        } catch (InterruptedException ex) {
-                        }
-                        // try catch for forcing Escape key press
-                        try {
-                            while(!inFocus) {
-                                if (panel.isFocusOwner()) {
-                                    inFocus = true;
-                                    break;
-                                }
-                                for (char c : string.toCharArray()) {
-                                    int keyCode = KeyEvent.getExtendedKeyCodeForChar(c);
-                                    if (KeyEvent.CHAR_UNDEFINED == keyCode) {
-                                        throw new RuntimeException(
-                                                "Key code not found for character '" + c + "'");
-                                    }
-                                    robotPressKey(robot, keyCode);
-                                }
-                                robotPressKey(robot, KeyEvent.VK_ENTER);
-                                Thread.sleep(1000);
-                            }
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-
-                    }
-                });
-                t.start();
-            }
-        });
+                frame.setLayout(new GridLayout(1,1));
     }
 
-    public Main2(String s) {
+    //the robot string typer, sent to another thread
+    public void start() {
+            thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException ex) {
+                    }
+                    try {
+                        while(!inFocus) {
+                            if (panel.isFocusOwner()) {
+                                inFocus = true;
+                                break;
+                            }
+                            for (char c : string.toCharArray()) {
+                                int keyCode = KeyEvent.getExtendedKeyCodeForChar(c);
+                                if (KeyEvent.CHAR_UNDEFINED == keyCode) {
+                                    throw new RuntimeException(
+                                            "Key code not found for character '" + c + "'");
+                                }
+                                robotPressKey(robot, keyCode);
+                            }
+                            robotPressKey(robot, KeyEvent.VK_ENTER);
+                            Thread.sleep(delay);
+                        }
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+            });
+            thread.start();
+        }
+
+        //sets up the display and stop keys and the button
+    public Main2(String s, Integer delay) {
+        this.delay = delay;
         this.string = s;
         try {
             robot = new Robot();
         } catch (AWTException e) {
             System.out.println("failed to create robot");
         }
-
+        start = new JButton();
+        start.addActionListener(this);
+        start.setText("Start");
+        start.setBounds(100,100,100,100);
+        start.setFocusable(true);
+        start.setVisible(true);
         panel = new JPanel(new BorderLayout());
         InputMap inputMap = panel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
         ActionMap actionMap = panel.getActionMap();
-
+        panel.add(start);
         for (char c : string.toCharArray()) {
             int keyCode = KeyEvent.getExtendedKeyCodeForChar(c);
             if (KeyEvent.CHAR_UNDEFINED == keyCode) {
@@ -124,11 +127,18 @@ public class Main2 extends JFrame {
         return x;
     }
 
+    //robot key typer shortcut
     private static void robotPressKey(Robot robot, int vk) {
         robot.keyPress(vk);
         robot.keyRelease(vk);
     }
 
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        start();
+    }
+
+    //stops the typer
     protected class EscapeAction extends AbstractAction {
 
 
@@ -141,7 +151,7 @@ public class Main2 extends JFrame {
                 StringSelection stringObj = new StringSelection(pass);
                 Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
                 clipboard.setContents(stringObj, null);
-                System.exit(0);
+                thread.interrupt();
 
                 System.out.println(pass);
 
