@@ -42,10 +42,7 @@ public class Main2 extends JFrame implements ActionListener {
                 @Override
                 public void run() {
                     try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException ex) {
-                    }
-                    try {
+                        Thread.sleep(2000);
                         while(!inFocus) {
                             if (panel.isFocusOwner()) {
                                 inFocus = true;
