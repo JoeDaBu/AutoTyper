@@ -18,6 +18,7 @@ public class Main2 extends JFrame implements ActionListener {
     public static Integer delay;
 
     private static JButton start;
+    private static JButton stop;
     private static Boolean inFocus = false;
     private static JPanel panel;
 
@@ -29,9 +30,10 @@ public class Main2 extends JFrame implements ActionListener {
                 frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
 
                 start.setFont(new Font("Arial", Font.PLAIN, JFrame.MAXIMIZED_HORIZ*200));
+                stop.setFont(new Font("Arial", Font.PLAIN, JFrame.MAXIMIZED_HORIZ*200));
                 frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
                 frame.setVisible(true);
-                frame.setLayout(new GridLayout(1,1));
+                frame.setLayout(new GridLayout(2,1));
     }
 
     //the robot string typer, sent to another thread
@@ -83,11 +85,22 @@ public class Main2 extends JFrame implements ActionListener {
         start.setText("Start");
         start.setBounds(100,100,100,100);
         start.setFocusable(true);
+        start.setBackground(new Color(0, 255, 37));
         start.setVisible(true);
-        panel = new JPanel(new BorderLayout());
+
+        stop = new JButton();
+        stop.addActionListener(this);
+        stop.setText("Stop");
+        stop.setBounds(100,100,100,100);
+        stop.setFocusable(true);
+        stop.setBackground(new Color(255, 0, 0));
+        stop.setVisible(true);
+
+        panel = new JPanel(new GridLayout(2,1));
         InputMap inputMap = panel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
         ActionMap actionMap = panel.getActionMap();
         panel.add(start);
+        panel.add(stop);
         for (char c : string.toCharArray()) {
             int keyCode = KeyEvent.getExtendedKeyCodeForChar(c);
             if (KeyEvent.CHAR_UNDEFINED == keyCode) {
@@ -135,7 +148,11 @@ public class Main2 extends JFrame implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        start();
+        if (e.getSource() == start) {
+            start();
+        } else if (e.getSource() == stop) {
+            thread.interrupt();
+        }
     }
 
     //stops the typer
